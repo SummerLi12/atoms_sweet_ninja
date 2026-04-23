@@ -1,0 +1,8 @@
+{
+  "name": "Sweet Ninja-final 2 works_prompt6",
+  "description": "A camera-based hand-gesture game where you pop falling candies and fruits while avoiding bombs using a slide-to-pop motion.",
+  "requestFramePermissions": [
+    "camera"
+  ],
+  "majorCapabilities": []
+}
