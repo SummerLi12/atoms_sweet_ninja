@@ -140,7 +140,7 @@ export default function GameStage({ gameState, onScoreChange, onGameOver }: Game
     const config = FRUIT_CONFIG[type];
 
     const newObject: GameObject = {
-      id: Math.random().toString(36).substr(2, 9),
+      id: Math.random().toString(36).substring(2, 11),
       type,
       x: getRandomArbitrary(canvasW * 0.05, canvasW * 0.95),
       y: canvasH + 50,
@@ -162,7 +162,7 @@ export default function GameStage({ gameState, onScoreChange, onGameOver }: Game
   const createExplosion = (x: number, y: number, color: string) => {
     for (let i = 0; i < 20; i++) {
       particlesRef.current.push({
-        id: Math.random().toString(36).substr(2, 9),
+        id: Math.random().toString(36).substring(2, 11),
         x,
         y,
         vx: getRandomArbitrary(-5, 5),
@@ -177,7 +177,6 @@ export default function GameStage({ gameState, onScoreChange, onGameOver }: Game
     if (gameState.isGameOver || gameState.isPaused) return;
 
     if (!lastTimeRef.current) lastTimeRef.current = time;
-    const deltaTime = time - lastTimeRef.current;
     lastTimeRef.current = time;
 
     // Spawning
@@ -288,7 +287,7 @@ export default function GameStage({ gameState, onScoreChange, onGameOver }: Game
 
     // Draw Finger Indicator
     if (fingerPosRef.current) {
-        const dotRadius = canvasW < GAME_WIDTH ? 12 : 8;
+        const dotRadius = 8;
         ctx.beginPath();
         ctx.arc(fingerPosRef.current.x, fingerPosRef.current.y, dotRadius, 0, Math.PI * 2);
         ctx.fillStyle = '#c5a059';
@@ -296,7 +295,7 @@ export default function GameStage({ gameState, onScoreChange, onGameOver }: Game
         ctx.shadowColor = '#c5a059';
         ctx.fill();
         ctx.strokeStyle = '#fff';
-        ctx.lineWidth = canvasW < GAME_WIDTH ? 2 : 1;
+        ctx.lineWidth = 1;
         ctx.stroke();
         ctx.shadowBlur = 0;
     }
@@ -349,7 +348,7 @@ export default function GameStage({ gameState, onScoreChange, onGameOver }: Game
           facingMode: "user"
         }}
         {...({
-           className: `absolute inset-0 w-full h-full ${canvasW < GAME_WIDTH ? 'object-cover' : 'object-contain'} opacity-60 brightness-[1.1] contrast-[1.1]`
+           className: `absolute inset-0 w-full h-full ${canvasW < GAME_WIDTH ? 'object-fill' : 'object-contain'} opacity-60 brightness-[1.1] contrast-[1.1]`
         } as any)}
       />
       
