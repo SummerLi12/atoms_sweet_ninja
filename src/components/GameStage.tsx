@@ -137,7 +137,12 @@ export default function GameStage({ gameState, onScoreChange, onGameOver }: Game
       y: GAME_HEIGHT + 50,
       vx: getRandomArbitrary(-2, 2),
       vy: getRandomArbitrary(-12, -18), // Shoot up
-      radius: type === 'bomb' ? 52 : 45,
+      // Scale radius so items appear the same physical size on any screen
+      radius: (() => {
+        const viewScale = Math.min(window.innerWidth / GAME_WIDTH, window.innerHeight / GAME_HEIGHT);
+        const base = type === 'bomb' ? 52 : 45;
+        return viewScale < 1 ? Math.round(base / viewScale) : base;
+      })(),
       rotation: 0,
       rotationSpeed: getRandomArbitrary(-0.1, 0.1),
       color: config.color,
