@@ -134,9 +134,10 @@ export default function GameStage({ gameState, onScoreChange, onGameOver }: Game
     const type = types[Math.floor(Math.random() * types.length)];
     const config = FRUIT_CONFIG[type];
     const { width, height } = canvasSizeRef.current;
-    // Scale velocity so arc height is proportional to screen size
     const velScale = height / GAME_HEIGHT;
     const margin = Math.min(80, width * 0.1);
+    // Scale radius with screen width, same size for all objects for visual consistency
+    const radius = Math.max(30, Math.min(52, width * 0.042));
 
     const newObject: GameObject = {
       id: Math.random().toString(36).substr(2, 9),
@@ -145,7 +146,7 @@ export default function GameStage({ gameState, onScoreChange, onGameOver }: Game
       y: height + 50,
       vx: getRandomArbitrary(-2, 2),
       vy: getRandomArbitrary(-12, -18) * velScale,
-      radius: type === 'bomb' ? 52 : 45,
+      radius,
       rotation: 0,
       rotationSpeed: getRandomArbitrary(-0.1, 0.1),
       color: config.color,
@@ -317,11 +318,7 @@ export default function GameStage({ gameState, onScoreChange, onGameOver }: Game
         ref={webcamRef as any}
         mirrored
         audio={false}
-        videoConstraints={{
-          width: canvasSize.width,
-          height: canvasSize.height,
-          facingMode: "user"
-        }}
+        videoConstraints={{ facingMode: "user" }}
         {...({
           className: "absolute inset-0 w-full h-full object-cover opacity-60 brightness-[1.1] contrast-[1.1]"
         } as any)}
