@@ -343,8 +343,8 @@ export default function GameStage({ gameState, onScoreChange, onGameOver }: Game
         mirrored
         audio={false}
         videoConstraints={{
-          width: { ideal: canvasW },
-          height: { ideal: canvasH },
+          width: { ideal: GAME_WIDTH },
+          height: { ideal: GAME_HEIGHT },
           facingMode: "user"
         }}
         {...({
