@@ -90,17 +90,7 @@ export default function App() {
             className="absolute inset-0 z-50 flex items-center justify-center bg-[#080808]/90 backdrop-blur-sm"
           >
             <div className="flex w-full h-full">
-              {/* Decorative Sidebar */}
-              <aside className="w-20 border-r border-white/10 flex flex-col items-center py-8 gap-10 bg-[#0a0a0a]">
-                <div className="w-10 h-10 bg-[#c5a059] rounded-sm flex items-center justify-center text-black font-bold text-xl">SN</div>
-                <div className="flex flex-col gap-8 opacity-40">
-                  <div className="w-6 h-6 border-2 border-white rounded-sm"></div>
-                  <div className="w-6 h-6 border-2 border-white rounded-full"></div>
-                  <div className="w-6 h-6 rotate-45 border-2 border-white"></div>
-                </div>
-              </aside>
-
-              <main className="flex-1 flex flex-col items-center justify-center p-12">
+<main className="flex-1 flex flex-col items-center justify-center p-12">
                 <motion.div
                   initial={{ y: 20, opacity: 0 }}
                   animate={{ y: 0, opacity: 1 }}

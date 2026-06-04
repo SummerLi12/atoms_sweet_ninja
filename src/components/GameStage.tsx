@@ -35,6 +35,7 @@ export default function GameStage({ gameState, onScoreChange, onGameOver }: Game
   const particlesRef = useRef<Particle[]>([]);
   const trailRef = useRef<{ x: number; y: number; time: number }[]>([]);
   const fingerPosRef = useRef<{ x: number; y: number } | null>(null);
+  const smoothedFingerRef = useRef<{ x: number; y: number } | null>(null);
   const requestRef = useRef<number>(0);
   const lastTimeRef = useRef<number>(0);
 
@@ -53,8 +54,8 @@ export default function GameStage({ gameState, onScoreChange, onGameOver }: Game
       hands.setOptions({
         maxNumHands: 1,
         modelComplexity: 1,
-        minDetectionConfidence: 0.5,
-        minTrackingConfidence: 0.5,
+        minDetectionConfidence: 0.7,
+        minTrackingConfidence: 0.7,
       });
 
       hands.onResults((results: Results) => {
@@ -63,18 +64,25 @@ export default function GameStage({ gameState, onScoreChange, onGameOver }: Game
           const landmarks = results.multiHandLandmarks[0];
           // Index finger tip is index 8
           const indexFinger = landmarks[8];
-          // Flip X because webcam is usually mirrored for the user
-          fingerPosRef.current = {
+          const raw = {
             x: (1 - indexFinger.x) * GAME_WIDTH,
             y: indexFinger.y * GAME_HEIGHT,
           };
-          
+          // Exponential moving average smoothing (alpha=0.5: balanced responsiveness/stability)
+          const alpha = 0.5;
+          const prev = smoothedFingerRef.current;
+          smoothedFingerRef.current = prev
+            ? { x: alpha * raw.x + (1 - alpha) * prev.x, y: alpha * raw.y + (1 - alpha) * prev.y }
+            : raw;
+          fingerPosRef.current = smoothedFingerRef.current;
+
           trailRef.current.push({
             ...fingerPosRef.current,
             time: Date.now()
           });
         } else {
           fingerPosRef.current = null;
+          smoothedFingerRef.current = null;
         }
       });
 
@@ -321,7 +329,7 @@ export default function GameStage({ gameState, onScoreChange, onGameOver }: Game
           facingMode: "user"
         }}
         {...({
-           className: "absolute inset-0 w-full h-full object-cover opacity-60 brightness-[1.1] contrast-[1.1]"
+           className: "absolute inset-0 w-full h-full object-contain opacity-60 brightness-[1.1] contrast-[1.1]"
         } as any)}
       />
       
