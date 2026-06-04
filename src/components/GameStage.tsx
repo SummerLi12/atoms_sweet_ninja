@@ -343,12 +343,13 @@ export default function GameStage({ gameState, onScoreChange, onGameOver }: Game
         mirrored
         audio={false}
         videoConstraints={{
-          width: canvasW,
-          height: canvasH,
+          width: { ideal: canvasW },
+          height: { ideal: canvasH },
+          aspectRatio: { ideal: canvasW / canvasH },
           facingMode: "user"
         }}
         {...({
-           className: `absolute inset-0 w-full h-full ${canvasW < GAME_WIDTH ? 'object-fill' : 'object-contain'} opacity-60 brightness-[1.1] contrast-[1.1]`
+           className: `absolute inset-0 w-full h-full ${canvasW < GAME_WIDTH ? 'object-cover' : 'object-contain'} opacity-60 brightness-[1.1] contrast-[1.1]`
         } as any)}
       />
       
