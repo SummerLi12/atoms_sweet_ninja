@@ -348,7 +348,7 @@ export default function GameStage({ gameState, onScoreChange, onGameOver }: Game
           facingMode: "user"
         }}
         {...({
-           className: `absolute inset-0 w-full h-full ${canvasW < GAME_WIDTH ? 'object-cover' : 'object-contain'} opacity-60 brightness-[1.1] contrast-[1.1]`
+           className: "absolute inset-0 w-full h-full object-contain opacity-60 brightness-[1.1] contrast-[1.1]"
         } as any)}
       />
       
