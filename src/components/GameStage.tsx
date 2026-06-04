@@ -7,14 +7,13 @@ import { useRef, useEffect, useState, useCallback } from 'react';
 import Webcam from 'react-webcam';
 import type { Hands, Results } from '@mediapipe/hands';
 import { GameObject, GameState, Particle } from '../types';
-import { 
-  GAME_WIDTH, 
-  GAME_HEIGHT, 
-  GRAVITY, 
-  SPAWN_RATE, 
-  FRUIT_CONFIG, 
-  getRandomArbitrary, 
-  getDistance 
+import {
+  GAME_HEIGHT,
+  GRAVITY,
+  SPAWN_RATE,
+  FRUIT_CONFIG,
+  getRandomArbitrary,
+  getDistance
 } from '../constants';
 
 interface GameStageProps {
@@ -29,7 +28,21 @@ export default function GameStage({ gameState, onScoreChange, onGameOver }: Game
   const handsRef = useRef<Hands | null>(null);
   const lastScoreRef = useRef(0);
   const [isLoaded, setIsLoaded] = useState(false);
-  
+
+  // Dynamic canvas size — updated on mount and window resize
+  const canvasSizeRef = useRef({ width: window.innerWidth, height: window.innerHeight });
+  const [canvasSize, setCanvasSize] = useState({ width: window.innerWidth, height: window.innerHeight });
+
+  useEffect(() => {
+    const update = () => {
+      const size = { width: window.innerWidth, height: window.innerHeight };
+      canvasSizeRef.current = size;
+      setCanvasSize(size);
+    };
+    window.addEventListener('resize', update);
+    return () => window.removeEventListener('resize', update);
+  }, []);
+
   // Game Logic Refs
   const objectsRef = useRef<GameObject[]>([]);
   const particlesRef = useRef<Particle[]>([]);
@@ -42,8 +55,6 @@ export default function GameStage({ gameState, onScoreChange, onGameOver }: Game
   // Initialize MediaPipe Hands
   useEffect(() => {
     async function setupHands() {
-      // In this environment, we might need to load from CDN for reliability if Local fails
-      // But we'll try the direct import first
       const handsMod = await import('@mediapipe/hands');
       const hands = new handsMod.Hands({
         locateFile: (file: string) => {
@@ -62,13 +73,12 @@ export default function GameStage({ gameState, onScoreChange, onGameOver }: Game
         if (!isLoaded) setIsLoaded(true);
         if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
           const landmarks = results.multiHandLandmarks[0];
-          // Index finger tip is index 8
           const indexFinger = landmarks[8];
+          const { width, height } = canvasSizeRef.current;
           const raw = {
-            x: (1 - indexFinger.x) * GAME_WIDTH,
-            y: indexFinger.y * GAME_HEIGHT,
+            x: (1 - indexFinger.x) * width,
+            y: indexFinger.y * height,
           };
-          // Exponential moving average smoothing (alpha=0.5: balanced responsiveness/stability)
           const alpha = 0.5;
           const prev = smoothedFingerRef.current;
           smoothedFingerRef.current = prev
@@ -76,10 +86,7 @@ export default function GameStage({ gameState, onScoreChange, onGameOver }: Game
             : raw;
           fingerPosRef.current = smoothedFingerRef.current;
 
-          trailRef.current.push({
-            ...fingerPosRef.current,
-            time: Date.now()
-          });
+          trailRef.current.push({ ...fingerPosRef.current, time: Date.now() });
         } else {
           fingerPosRef.current = null;
           smoothedFingerRef.current = null;
@@ -126,14 +133,18 @@ export default function GameStage({ gameState, onScoreChange, onGameOver }: Game
     const types: ('fruit' | 'candy' | 'bomb')[] = ['fruit', 'fruit', 'fruit', 'candy', 'bomb'];
     const type = types[Math.floor(Math.random() * types.length)];
     const config = FRUIT_CONFIG[type];
+    const { width, height } = canvasSizeRef.current;
+    // Scale velocity so arc height is proportional to screen size
+    const velScale = height / GAME_HEIGHT;
+    const margin = Math.min(80, width * 0.1);
 
     const newObject: GameObject = {
       id: Math.random().toString(36).substr(2, 9),
       type,
-      x: getRandomArbitrary(100, GAME_WIDTH - 100),
-      y: GAME_HEIGHT + 50,
+      x: getRandomArbitrary(margin, width - margin),
+      y: height + 50,
       vx: getRandomArbitrary(-2, 2),
-      vy: getRandomArbitrary(-12, -18), // Shoot up
+      vy: getRandomArbitrary(-12, -18) * velScale,
       radius: type === 'bomb' ? 52 : 45,
       rotation: 0,
       rotationSpeed: getRandomArbitrary(-0.1, 0.1),
@@ -163,20 +174,16 @@ export default function GameStage({ gameState, onScoreChange, onGameOver }: Game
     if (gameState.isGameOver || gameState.isPaused) return;
 
     if (!lastTimeRef.current) lastTimeRef.current = time;
-    const deltaTime = time - lastTimeRef.current;
     lastTimeRef.current = time;
 
-    // Spawning
     if (Math.random() < SPAWN_RATE) {
       spawnObject();
     }
 
-    // Update Trail
     const now = Date.now();
-    trailRef.current = trailRef.current.filter(p => now - p.time < 300);
+    trailRef.current = trailRef.current.filter((p: { x: number; y: number; time: number }) => now - p.time < 300);
 
-    // Update Particles
-    particlesRef.current = particlesRef.current.filter(p => {
+    particlesRef.current = particlesRef.current.filter((p: Particle) => {
       p.x += p.vx;
       p.y += p.vy;
       p.vy += GRAVITY * 0.5;
@@ -184,14 +191,14 @@ export default function GameStage({ gameState, onScoreChange, onGameOver }: Game
       return p.life > 0;
     });
 
-    // Update Objects
-    objectsRef.current = objectsRef.current.filter(obj => {
+    const { height } = canvasSizeRef.current;
+
+    objectsRef.current = objectsRef.current.filter((obj: GameObject) => {
       obj.x += obj.vx;
       obj.y += obj.vy;
       obj.vy += GRAVITY;
       obj.rotation += obj.rotationSpeed;
 
-      // Collision Detection
       if (fingerPosRef.current && !obj.isPopped) {
         const dist = getDistance(fingerPosRef.current.x, fingerPosRef.current.y, obj.x, obj.y);
         if (dist < obj.radius + 20) {
@@ -206,8 +213,7 @@ export default function GameStage({ gameState, onScoreChange, onGameOver }: Game
         }
       }
 
-      // Return true if object is still on screen and not popped
-      return obj.y < GAME_HEIGHT + 100 && !obj.isPopped;
+      return obj.y < height + 100 && !obj.isPopped;
     });
   }, [gameState.isGameOver, gameState.isPaused, onGameOver, onScoreChange, spawnObject]);
 
@@ -217,15 +223,13 @@ export default function GameStage({ gameState, onScoreChange, onGameOver }: Game
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    ctx.clearRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    // Draw Trail
     if (trailRef.current.length > 2) {
       ctx.beginPath();
       ctx.moveTo(trailRef.current[0].x, trailRef.current[0].y);
       for (let i = 1; i < trailRef.current.length; i++) {
-        const point = trailRef.current[i];
-        ctx.lineTo(point.x, point.y);
+        ctx.lineTo(trailRef.current[i].x, trailRef.current[i].y);
       }
       ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
       ctx.lineWidth = 14;
@@ -233,13 +237,11 @@ export default function GameStage({ gameState, onScoreChange, onGameOver }: Game
       ctx.lineJoin = 'round';
       ctx.stroke();
 
-      // Inner trail
       ctx.strokeStyle = '#c5a059';
       ctx.lineWidth = 3;
       ctx.stroke();
     }
 
-    // Draw Particles
     particlesRef.current.forEach(p => {
       ctx.globalAlpha = p.life * 0.8;
       ctx.fillStyle = Math.random() > 0.5 ? '#c5a059' : '#fff';
@@ -249,36 +251,30 @@ export default function GameStage({ gameState, onScoreChange, onGameOver }: Game
     });
     ctx.globalAlpha = 1.0;
 
-    // Draw Objects
     objectsRef.current.forEach(obj => {
       ctx.save();
       ctx.translate(obj.x, obj.y);
       ctx.rotate(obj.rotation);
-      
-      // Shadow
       ctx.shadowBlur = 15;
       ctx.shadowColor = obj.color;
-      
       ctx.font = `${obj.radius * 1.5}px serif`;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       ctx.fillText(obj.emoji, 0, 0);
-      
       ctx.restore();
     });
 
-    // Draw Finger Indicator
     if (fingerPosRef.current) {
-        ctx.beginPath();
-        ctx.arc(fingerPosRef.current.x, fingerPosRef.current.y, 8, 0, Math.PI * 2);
-        ctx.fillStyle = '#c5a059';
-        ctx.shadowBlur = 10;
-        ctx.shadowColor = '#c5a059';
-        ctx.fill();
-        ctx.strokeStyle = '#fff';
-        ctx.lineWidth = 1;
-        ctx.stroke();
-        ctx.shadowBlur = 0;
+      ctx.beginPath();
+      ctx.arc(fingerPosRef.current.x, fingerPosRef.current.y, 8, 0, Math.PI * 2);
+      ctx.fillStyle = '#c5a059';
+      ctx.shadowBlur = 10;
+      ctx.shadowColor = '#c5a059';
+      ctx.fill();
+      ctx.strokeStyle = '#fff';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+      ctx.shadowBlur = 0;
     }
 
     requestRef.current = requestAnimationFrame((time) => {
@@ -292,7 +288,6 @@ export default function GameStage({ gameState, onScoreChange, onGameOver }: Game
     return () => cancelAnimationFrame(requestRef.current);
   }, [draw]);
 
-  // Reset score ref on game restart
   useEffect(() => {
     if (!gameState.isGameOver) {
       lastScoreRef.current = gameState.score;
@@ -305,39 +300,38 @@ export default function GameStage({ gameState, onScoreChange, onGameOver }: Game
 
   return (
     <div className="relative w-full h-full flex items-center justify-center bg-black">
-      {/* Background Dimmer Layer */}
       <div className="absolute inset-0 bg-black/35 z-[5]" />
-      
+
       {!isLoaded && (
         <div className="absolute inset-0 z-[60] flex items-center justify-center bg-[#080808]">
-           <div className="text-center">
-              <div className="w-12 h-12 border border-[#c5a059]/30 border-t-[#c5a059] rounded-full animate-spin mx-auto mb-6" />
-              <div className="text-[#c5a059] font-serif italic text-lg tracking-widest animate-pulse">
-                Calibrating Neural Interface...
-              </div>
-           </div>
+          <div className="text-center">
+            <div className="w-12 h-12 border border-[#c5a059]/30 border-t-[#c5a059] rounded-full animate-spin mx-auto mb-6" />
+            <div className="text-[#c5a059] font-serif italic text-lg tracking-widest animate-pulse">
+              Calibrating Neural Interface...
+            </div>
+          </div>
         </div>
       )}
-      
+
       <Webcam
         ref={webcamRef as any}
         mirrored
         audio={false}
         videoConstraints={{
-          width: GAME_WIDTH,
-          height: GAME_HEIGHT,
+          width: canvasSize.width,
+          height: canvasSize.height,
           facingMode: "user"
         }}
         {...({
-           className: "absolute inset-0 w-full h-full object-contain opacity-60 brightness-[1.1] contrast-[1.1]"
+          className: "absolute inset-0 w-full h-full object-cover opacity-60 brightness-[1.1] contrast-[1.1]"
         } as any)}
       />
-      
+
       <canvas
         ref={canvasRef}
-        width={GAME_WIDTH}
-        height={GAME_HEIGHT}
-        className="relative z-10 w-full h-full object-contain pointer-events-none"
+        width={canvasSize.width}
+        height={canvasSize.height}
+        className="absolute inset-0 z-10 w-full h-full pointer-events-none"
       />
     </div>
   );
