@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { useRef, useEffect, useState, useCallback } from 'react';
+import { useRef, useEffect, useState, useCallback, useMemo } from 'react';
 import Webcam from 'react-webcam';
 import type { Hands, Results } from '@mediapipe/hands';
 import { GameObject, GameState, Particle } from '../types';
@@ -40,6 +40,15 @@ export default function GameStage({ gameState, onScoreChange, onGameOver }: Game
   const requestRef = useRef<number>(0);
   const lastTimeRef = useRef<number>(0);
 
+  // On mobile use viewport size so canvas fills the screen; desktop keeps fixed 1280×720
+  const { canvasW, canvasH } = useMemo(() => {
+    const mobile = window.innerWidth < 768;
+    return {
+      canvasW: mobile ? window.innerWidth : GAME_WIDTH,
+      canvasH: mobile ? window.innerHeight : GAME_HEIGHT,
+    };
+  }, []);
+
   // Initialize MediaPipe Hands
   useEffect(() => {
     async function setupHands() {
@@ -66,8 +75,8 @@ export default function GameStage({ gameState, onScoreChange, onGameOver }: Game
           // Index finger tip is index 8
           const indexFinger = landmarks[8];
           const raw = {
-            x: (1 - indexFinger.x) * GAME_WIDTH,
-            y: indexFinger.y * GAME_HEIGHT,
+            x: (1 - indexFinger.x) * canvasW,
+            y: indexFinger.y * canvasH,
           };
           // Adaptive EMA: fast movement gets high alpha (responsive), slow gets low (smooth)
           const prev = smoothedFingerRef.current;
@@ -133,8 +142,8 @@ export default function GameStage({ gameState, onScoreChange, onGameOver }: Game
     const newObject: GameObject = {
       id: Math.random().toString(36).substr(2, 9),
       type,
-      x: getRandomArbitrary(100, GAME_WIDTH - 100),
-      y: GAME_HEIGHT + 50,
+      x: getRandomArbitrary(canvasW * 0.08, canvasW * 0.92),
+      y: canvasH + 50,
       vx: getRandomArbitrary(-2, 2),
       vy: getRandomArbitrary(-12, -18), // Shoot up
       radius: type === 'bomb' ? 52 : 45,
@@ -215,7 +224,7 @@ export default function GameStage({ gameState, onScoreChange, onGameOver }: Game
       }
 
       // Return true if object is still on screen and not popped
-      return obj.y < GAME_HEIGHT + 100 && !obj.isPopped;
+      return obj.y < canvasH + 100 && !obj.isPopped;
     });
   }, [gameState.isGameOver, gameState.isPaused, onGameOver, onScoreChange, spawnObject]);
 
@@ -225,7 +234,7 @@ export default function GameStage({ gameState, onScoreChange, onGameOver }: Game
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    ctx.clearRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
+    ctx.clearRect(0, 0, canvasW, canvasH);
 
     // Draw Trail
     if (trailRef.current.length > 2) {
@@ -332,8 +341,8 @@ export default function GameStage({ gameState, onScoreChange, onGameOver }: Game
         mirrored
         audio={false}
         videoConstraints={{
-          width: GAME_WIDTH,
-          height: GAME_HEIGHT,
+          width: canvasW,
+          height: canvasH,
           facingMode: "user"
         }}
         {...({
@@ -343,8 +352,8 @@ export default function GameStage({ gameState, onScoreChange, onGameOver }: Game
       
       <canvas
         ref={canvasRef}
-        width={GAME_WIDTH}
-        height={GAME_HEIGHT}
+        width={canvasW}
+        height={canvasH}
         className="relative z-10 w-full h-full object-contain pointer-events-none"
       />
     </div>
