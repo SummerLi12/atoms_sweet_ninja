@@ -146,7 +146,9 @@ export default function GameStage({ gameState, onScoreChange, onGameOver }: Game
       y: canvasH + 50,
       vx: getRandomArbitrary(-2, 2),
       vy: getRandomArbitrary(-12, -18),
-      radius: type === 'bomb' ? 52 : 45,
+      radius: canvasW < GAME_WIDTH
+        ? (type === 'bomb' ? 38 : 32)
+        : (type === 'bomb' ? 52 : 45),
       rotation: 0,
       rotationSpeed: getRandomArbitrary(-0.1, 0.1),
       color: config.color,
@@ -286,7 +288,7 @@ export default function GameStage({ gameState, onScoreChange, onGameOver }: Game
 
     // Draw Finger Indicator
     if (fingerPosRef.current) {
-        const dotRadius = canvasW < GAME_WIDTH ? 20 : 8;
+        const dotRadius = canvasW < GAME_WIDTH ? 12 : 8;
         ctx.beginPath();
         ctx.arc(fingerPosRef.current.x, fingerPosRef.current.y, dotRadius, 0, Math.PI * 2);
         ctx.fillStyle = '#c5a059';
@@ -347,7 +349,7 @@ export default function GameStage({ gameState, onScoreChange, onGameOver }: Game
           facingMode: "user"
         }}
         {...({
-           className: "absolute inset-0 w-full h-full object-contain opacity-60 brightness-[1.1] contrast-[1.1]"
+           className: `absolute inset-0 w-full h-full ${canvasW < GAME_WIDTH ? 'object-cover' : 'object-contain'} opacity-60 brightness-[1.1] contrast-[1.1]`
         } as any)}
       />
       
