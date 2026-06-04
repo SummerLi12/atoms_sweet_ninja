@@ -126,7 +126,7 @@ export default function GameStage({ gameState, onScoreChange, onGameOver }: Game
       y: GAME_HEIGHT + 50,
       vx: getRandomArbitrary(-2, 2),
       vy: getRandomArbitrary(-12, -18), // Shoot up
-      radius: type === 'bomb' ? 38 : 45,
+      radius: type === 'bomb' ? 52 : 45,
       rotation: 0,
       rotationSpeed: getRandomArbitrary(-0.1, 0.1),
       color: config.color,
@@ -298,7 +298,7 @@ export default function GameStage({ gameState, onScoreChange, onGameOver }: Game
   return (
     <div className="relative w-full h-full flex items-center justify-center bg-black">
       {/* Background Dimmer Layer */}
-      <div className="absolute inset-0 bg-black/40 z-[5]" />
+      <div className="absolute inset-0 bg-black/35 z-[5]" />
       
       {!isLoaded && (
         <div className="absolute inset-0 z-[60] flex items-center justify-center bg-[#080808]">
@@ -321,7 +321,7 @@ export default function GameStage({ gameState, onScoreChange, onGameOver }: Game
           facingMode: "user"
         }}
         {...({
-           className: "absolute inset-0 w-full h-full object-cover grayscale opacity-30 brightness-[0.7] contrast-[1.2]"
+           className: "absolute inset-0 w-full h-full object-cover opacity-60 brightness-[1.1] contrast-[1.1]"
         } as any)}
       />
       
