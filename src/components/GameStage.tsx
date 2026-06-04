@@ -345,7 +345,6 @@ export default function GameStage({ gameState, onScoreChange, onGameOver }: Game
         videoConstraints={{
           width: { ideal: canvasW },
           height: { ideal: canvasH },
-          aspectRatio: { ideal: canvasW / canvasH },
           facingMode: "user"
         }}
         {...({
