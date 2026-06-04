@@ -146,7 +146,7 @@ export default function GameStage({ gameState, onScoreChange, onGameOver }: Game
       y: canvasH + 50,
       vx: getRandomArbitrary(-2, 2),
       vy: getRandomArbitrary(-12, -18), // Shoot up
-      radius: type === 'bomb' ? 52 : 45,
+      radius: type === 'bomb' ? (canvasW < 768 ? 85 : 52) : (canvasW < 768 ? 72 : 45),
       rotation: 0,
       rotationSpeed: getRandomArbitrary(-0.1, 0.1),
       color: config.color,
